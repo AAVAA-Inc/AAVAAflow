@@ -1,4 +1,5 @@
 #include <string>
+#include <regex>
 
 #include "aavaa_v3.h"
 #include "custom_cast.h"
@@ -11,6 +12,28 @@
 #define AAVAA3_WRITE_CHAR "6e400002-c352-11e5-953d-0002a5d5c51b"
 #define AAVAA3_NOTIFY_CHAR "6e400003-c352-11e5-953d-0002a5d5c51b"
 
+
+int extractBoardVersion(const std::string& inputString) {
+    // Define a regular expression pattern to match the desired format
+    std::regex pattern("@AAVAA-(\\d+) ");
+
+    // Search for the pattern in the input string
+    std::smatch match;
+    if (std::regex_search(inputString, match, pattern)) {
+        // The captured group at index 1 contains the number
+        std::string numberStr = match[1].str();
+
+        // Convert the string to an integer
+        int number = std::stoi(numberStr);
+
+        // Return the extracted number
+        return number;
+    } else {
+        // Return a default value or throw an exception based on your requirements
+        // In this example, we return -1 to indicate an error
+        return -1;
+    }
+}
 
 void aavaa_adapter_1_on_scan_start (simpleble_adapter_t adapter, void *board)
 {
@@ -41,9 +64,6 @@ AAVAAv3::AAVAAv3 (struct BrainFlowInputParams params)
     aavaa_adapter = NULL;
     aavaa_peripheral = NULL;
     is_streaming = false;
-    start_command = "\x01\x62";
-    stop_command = "\x01\x39";
-    firmware_command = "\x01\x7e";
 }
 
 AAVAAv3::~AAVAAv3 ()
@@ -168,7 +188,7 @@ int AAVAAv3::prepare_session ()
                 res = (int)BrainFlowExitCodes::BOARD_NOT_READY_ERROR;
             }
 
-            safe_logger (spdlog::level::trace, "found servce {}", service.uuid.value);
+            safe_logger (spdlog::level::trace, "found service {}", service.uuid.value);
             for (size_t j = 0; j < service.characteristic_count; j++)
             {
                 safe_logger (spdlog::level::trace, "found characteristic {}",
@@ -327,14 +347,13 @@ int AAVAAv3::config_board (std::string config, std::string &response)
 
     int res = (int)BrainFlowExitCodes::STATUS_OK;
 
-
     res = send_command (config);
-    if ((config[0] == 'w') || (config[1] == '~'))
+    if ((config[0] == 'w') || ((config[0] == '~')))
     {
 #ifdef _WIN32
-        Sleep (200);
+        Sleep (250);
 #else
-        usleep (200000);
+        usleep (250000);
 #endif
         response = device_status;
         device_status = "";
@@ -352,12 +371,14 @@ int AAVAAv3::send_command (std::string config)
     {
         return (int)BrainFlowExitCodes::INVALID_ARGUMENTS_ERROR;
     }
-    uint8_t *command = new uint8_t[config.size ()];
-    memcpy (command, config.c_str (), config.size ());
-    if (simpleble_peripheral_write_command (aavaa_peripheral, write_characteristics.first,
-            write_characteristics.second, command, config.size ()) != SIMPLEBLE_SUCCESS)
+    std::string _config = fix_command(config);
+    uint8_t *command = new uint8_t[_config.size ()];
+    memcpy (command, _config.c_str (), _config.size ());
+    simpleble_err_t send_command_res = simpleble_peripheral_write_request (aavaa_peripheral, write_characteristics.first,
+            write_characteristics.second, command, _config.size ());
+    if (send_command_res != SIMPLEBLE_SUCCESS)
     {
-        safe_logger (spdlog::level::err, "failed to send command {} to device", config.c_str ());
+        safe_logger (spdlog::level::err, "failed to send command {} to device", _config.c_str ());
         delete[] command;
         return (int)BrainFlowExitCodes::BOARD_WRITE_ERROR;
     }
@@ -430,6 +451,15 @@ void AAVAAv3::adapter_1_on_scan_found (
     }
 }
 
+std::string AAVAAv3::fix_command(std::string config)
+{
+    std::string command = config;
+    if (device_version == 3) {
+        command = "\x01" + command;
+    }
+    return command;
+}
+
 void AAVAAv3::read_data (
     simpleble_uuid_t service, simpleble_uuid_t characteristic, uint8_t *data, size_t size)
 {
@@ -437,16 +467,21 @@ void AAVAAv3::read_data (
 
     if (!is_streaming)
     {
-        if (data[1] == 64)
-        { // when the first byte is @
+        safe_logger (spdlog::level::trace, "received a string with start byte {} {} {} {} {}",
+            data[0], data[1], data[2], data[3], data[4]);
+        if ((data[0] == 64) || (data[1] == 64))
+        { // when the first or second byte is @
+            char markerChar = 'S';
             std::string temp (reinterpret_cast<const char *> (data), size);
-            device_status = temp.substr (1);
-            safe_logger (spdlog::level::trace, "received a status string {} ", device_status);
-        }
-        else
-        {
-            safe_logger (spdlog::level::trace, "received a string with start byte {} {} {} {} {}",
-                data[0], data[1], data[2], data[3], data[4]);
+            if (data[0] == 64) {
+                device_status = temp;
+            } else {
+                device_status = temp.substr (1);
+            }
+            if (device_status[7] != markerChar) {
+                device_version = extractBoardVersion(device_status);
+            }
+            safe_logger (spdlog::level::trace, "received a status string {}, version {}", device_status, device_version);
         }
         return;
     }
@@ -457,14 +492,18 @@ void AAVAAv3::read_data (
 
     if (size == 244)
     {
-        data += 3;
-        size -= 3;
+        if (device_version == 3) {
+            data += 3;
+            size -= 3;
+        }
         Incoming_BLE_Data_Buffer.insert (Incoming_BLE_Data_Buffer.end (), data, data + size);
     }
     else if (size > 1)
     {
-        ++data;
-        --size;
+        if (device_version == 3) {
+            ++data;
+            --size;
+        }
         Incoming_BLE_Data_Buffer.insert (Incoming_BLE_Data_Buffer.end (), data, data + size);
     }
 

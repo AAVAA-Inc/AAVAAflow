@@ -21,6 +21,7 @@ public:
     int release_session ();
     int config_board (std::string config, std::string &response);
     int send_command (std::string config);
+    std::string fix_command(std::string config);
 
     void adapter_1_on_scan_start (simpleble_adapter_t adapter);
     void adapter_1_on_scan_stop (simpleble_adapter_t adapter);
@@ -29,6 +30,7 @@ public:
         simpleble_uuid_t service, simpleble_uuid_t characteristic, uint8_t *data, size_t size);
     std::deque<uint8_t> Incoming_BLE_Data_Buffer;
     std::string device_status;
+    int device_version = 3;
 
 protected:
     const double TIMESTAMP_SCALE = (double)(4. / 1000.); // 4 ms
@@ -48,7 +50,9 @@ protected:
     std::condition_variable cv;
     std::pair<simpleble_uuid_t, simpleble_uuid_t> notified_characteristics;
     std::pair<simpleble_uuid_t, simpleble_uuid_t> write_characteristics;
-    std::string start_command;
-    std::string stop_command;
+    std::string start_command_ = "\x62";
+    std::string stop_command_ = "\x39";
+    std::string start_command = "\x62";
+    std::string stop_command = "\x39";
     std::string firmware_command;
 };
