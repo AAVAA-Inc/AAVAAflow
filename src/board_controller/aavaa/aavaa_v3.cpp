@@ -385,7 +385,7 @@ int AAVAAv3::send_command (std::string config)
     else
     {
         safe_logger (
-            spdlog::level::trace, "successfully sent command {} to device", config.c_str ());
+            spdlog::level::trace, "successfully sent command {} to device", _config.c_str ());
     }
     delete[] command;
     return (int)BrainFlowExitCodes::STATUS_OK;
@@ -579,8 +579,13 @@ void AAVAAv3::read_data (
         // timestamp
         try
         {
-            package[board_descr["default"]["other_channels"][4].get<int> ()] =
-                *reinterpret_cast<uint32_t *> (data_frame + 42) * TIMESTAMP_SCALE;
+            if (device_version == 3) {
+                package[board_descr["default"]["other_channels"][4].get<int> ()] =
+                    *reinterpret_cast<uint32_t *> (data_frame + 42) * TIMESTAMP_SCALE_V3;
+            } else {
+                package[board_descr["default"]["other_channels"][4].get<int> ()] =
+                    *reinterpret_cast<uint32_t *> (data_frame + 42) * TIMESTAMP_SCALE_V4;
+            }
         }
         catch (const std::exception &e)
         {

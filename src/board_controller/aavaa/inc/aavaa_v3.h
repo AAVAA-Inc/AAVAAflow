@@ -33,7 +33,8 @@ public:
     int device_version = 3;
 
 protected:
-    const double TIMESTAMP_SCALE = (double)(4. / 1000.); // 4 ms
+    const double TIMESTAMP_SCALE_V3 = (double)(4. / 1000.); // 4 ms
+    const double TIMESTAMP_SCALE_V4 = (double)(1. / 1000.); // 4 ms
     const double IMU_SCALE = (double)(1. / 100.);
     const double DETECTION_SCALE = 1.0;
     const int Ring_Buffer_Max_Size = 244 * 5;
