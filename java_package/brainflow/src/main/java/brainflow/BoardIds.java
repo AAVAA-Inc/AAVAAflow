@@ -62,7 +62,8 @@ public enum BoardIds
     NTL_WIFI_BOARD (50),
     ANT_NEURO_EE_511_BOARD (51),
     FREEEEG128_BOARD (52),
-    AAVAA_V3_BOARD(53);
+    AAVAA_V3_BOARD(53),
+    AAVAA_V2_BOARD(54);
 
     private final int board_id;
     private static final Map<Integer, BoardIds> bi_map = new HashMap<Integer, BoardIds> ();

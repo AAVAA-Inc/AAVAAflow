@@ -56,5 +56,6 @@ classdef BoardIds < int32
         ANT_NEURO_EE_511_BOARD(51)
         FREEEEG128_BOARD(52)
         AAVAA_V3_BOARD(53)
+        AAVAA_V2_BOARD(54)
     end
 end

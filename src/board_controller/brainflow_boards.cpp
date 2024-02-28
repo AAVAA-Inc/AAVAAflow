@@ -71,7 +71,8 @@ BrainFlowBoards::BrainFlowBoards()
             {"50", json::object()},
             {"51", json::object()},
             {"52", json::object()},
-            {"53", json::object()}
+            {"53", json::object()},
+            {"54", json::object()}
         }
     }};
 
@@ -995,6 +996,23 @@ BrainFlowBoards::BrainFlowBoards()
     {
         {"name", "AAVAA V3"},
         {"sampling_rate", 50},
+        {"package_num_channel", 0},
+        {"timestamp_channel", 18},
+        {"marker_channel", 19},
+        {"num_rows", 20},
+        {"eeg_channels", {1, 2, 3, 4, 5, 6, 7, 8}},
+        {"eeg_names", "L1,L2,L3,L4,R1,R2,R3,R4"},
+        {"emg_channels", {1, 2, 3, 4, 5, 6, 7, 8}},
+        {"ecg_channels", {1, 2, 3, 4, 5, 6, 7, 8}},
+        {"eog_channels", {1, 2, 3, 4, 5, 6, 7, 8}},
+        {"rotation_channels", {9, 10, 11}},
+        {"battery_channel", 12},
+        {"other_channels", {13, 14, 15, 16, 17}}
+    };
+    brainflow_boards_json["boards"]["54"]["default"] =
+    {
+        {"name", "AAVAA V2"},
+        {"sampling_rate", 125},
         {"package_num_channel", 0},
         {"timestamp_channel", 18},
         {"marker_channel", 19},

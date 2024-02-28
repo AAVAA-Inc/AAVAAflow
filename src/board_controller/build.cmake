@@ -84,6 +84,7 @@ SET (BOARD_CONTROLLER_SRC
     ${CMAKE_CURRENT_SOURCE_DIR}/src/board_controller/emotibit/emotibit.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/board_controller/ntl/ntl_wifi.cpp
     ${CMAKE_HOME_DIRECTORY}/src/board_controller/aavaa/aavaa_v3.cpp
+    ${CMAKE_HOME_DIRECTORY}/src/board_controller/aavaa/aavaa_v2.cpp
 )
 
 include (${CMAKE_CURRENT_SOURCE_DIR}/src/board_controller/ant_neuro/build.cmake)
